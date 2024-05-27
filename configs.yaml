@@ -1,5 +1,4 @@
 port: 6010
-amount: 0.5
 interval: 24
 privateKey:
 sepolia:
