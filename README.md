@@ -17,7 +17,6 @@
 4. 添加配置信息
 ```yaml
    port: 6010
-   amount: 0.5  
    interval: 24 # (24 hours) collection interval
    privateKey: Your wallet's private key 
    sepolia:
