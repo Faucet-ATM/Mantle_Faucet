@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -14,13 +15,13 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
 var (
 	logger             *zap.Logger
 	cfg                *viper.Viper
-	amountDefault      float64
 	integerDefault     int
 	privateKeyDefault  string
 	portDefault        string
@@ -29,8 +30,9 @@ var (
 )
 
 type RequestBody struct {
-	Network string `json:"network"`
-	Address string `json:"address"`
+	Network string `json:"network" banding:"required"`
+	Address string `json:"address" banding:"required"`
+	Amount  string `json:"amount" banding:"required"`
 }
 type ApiResponse struct {
 	Success bool        `json:"success"`
@@ -98,7 +100,12 @@ func handleWithdraw(c *gin.Context) {
 	}
 
 	// 金额转换 wei=>eth
-	amount := big.NewFloat(amountDefault)
+	amountFloat64, err := strconv.ParseFloat(req.Amount, 64)
+	if err != nil {
+		fmt.Println("Error converting string to float64:", err)
+		return
+	}
+	amount := big.NewFloat(amountFloat64)
 	amount = amount.Mul(amount, big.NewFloat(1e18))
 	intAmount := new(big.Int)
 	amount.Int(intAmount)
@@ -193,10 +200,10 @@ func handleWithdraw(c *gin.Context) {
 	}
 
 	toAddress := common.HexToAddress(Address)
-	gasLimit := uint64(21000)
+	//gasLimit := uint64(21000)
 
 	// 动态估算 gasLimit
-	/*msg := ethereum.CallMsg{
+	msg := ethereum.CallMsg{
 		From:      fromAddress,
 		To:        &toAddress,
 		GasFeeCap: gasFeeCap,
@@ -212,7 +219,7 @@ func handleWithdraw(c *gin.Context) {
 			Message: "Failed to estimate gas",
 		})
 		return
-	}*/
+	}
 
 	// 构造交易
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -273,8 +280,7 @@ func initConfig() (*viper.Viper, error) {
 	logger.Info("Config initialized successfully")
 
 	// 获取配置文件中的配置信息
-	amountDefault = v.GetFloat64("amount")
-	integerDefault = v.GetInt("integer")
+	integerDefault = v.GetInt("interval")
 	privateKeyDefault = v.GetString("privateKey")
 	portDefault = fmt.Sprintf(":%d", v.GetInt("port"))
 	explorerUrlDefault = v.GetString("sepolia.explorerUrl")
